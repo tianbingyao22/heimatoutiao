@@ -1,5 +1,5 @@
 <template>
-  <div>Profile</div>
+  <div>首页</div>
 </template>
 
 <script>

@@ -20,3 +20,10 @@ export const sendCode = (mobile) => {
     url: `/v1_0/sms/codes/${mobile}`
   })
 }
+
+export const getUserInfo = () => {
+  return request({
+    url: '/v1_0/user'
+    // 在拦截器中加了headers,token
+  })
+}

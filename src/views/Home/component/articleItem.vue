@@ -58,8 +58,13 @@ export default {
   },
   methods: {
     getNewsDetail(item) {
-      this.$store.state.article_id = item.art_id
-      this.$router.push('/detail')
+      // this.$store.state.article_id = item.art_id
+      this.$router.push({
+        path: '/detail',
+        query: {
+          art_id: item.art_id
+        }
+      })
     }
   }
 }

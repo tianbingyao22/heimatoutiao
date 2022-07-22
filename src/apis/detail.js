@@ -22,8 +22,7 @@ export const getCommit = (type, source, offset) => {
     params: {
       type,
       source,
-      offset,
-      limit: 100
+      offset
     }
   })
 }

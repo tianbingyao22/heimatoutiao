@@ -1,16 +1,15 @@
 <template>
-  <div>
+  <div class="reply-pop">
     <van-nav-bar title="暂无回复" class="reply-navbar" />
     <!-- 单个评论组件 -->
-    <commitInfo :item="item"></commitInfo>
+    <commitpart :item="item"></commitpart>
     <van-cell title="全部回复" />
     <!-- 单个回复评论组件 -->
-    <commitInfo
-      v-for="(item1, index) in replyList"
-      :key="index"
+    <commitpart
+      v-for="item1 in replyList"
+      :key="item1.com_id"
       :item="item1"
-    ></commitInfo>
-
+    ></commitpart>
     <!--底部按钮  -->
     <div class="reply-btn">
       <van-button
@@ -28,44 +27,49 @@
         :style="{ height: '18%' }"
         class="commit-pop"
       >
-        <replyCommit @postCommit="postCommitFn"></replyCommit>
+        <messagepart @postCommit="postRelyFn"></messagepart>
       </van-popup>
     </div>
   </div>
 </template>
 
 <script>
-import commitInfo from '../Commit'
+import commitpart from '../Commit'
+import messagepart from '../message-pop'
 import { getCommit, postCommit } from '@/apis'
-import replyCommit from '../message-pop'
 export default {
-  created() {
-    this.item = this.$store.state.replyCommit
-    this.getCommit()
+  components: {
+    commitpart,
+    messagepart
   },
   data() {
     return {
-      item: {},
-      replyList: [],
-      replyCommitShow: false
+      replyCommitShow: false,
+      replyList: []
     }
   },
-  components: { commitInfo, replyCommit },
+  created() {
+    this.getCommitList()
+  },
+  computed: {
+    item() {
+      return this.$store.state.replyCimmit
+    }
+  },
+  watch: {
+    item() {
+      this.getCommitList()
+    }
+  },
   methods: {
-    async getCommit() {
-      const res = await getCommit('c', this.$store.state.replyCommit.com_id)
+    async getCommitList() {
+      const res = await getCommit('c', this.item.com_id)
       this.replyList = res.data.data.results
     },
-    async postCommitFn(words) {
-      const res = await postCommit(
-        this.$store.state.replyCommit.com_id,
-        words,
-        this.$store.state.article_id
-      )
-      this.getCommit()
-      this.$toast.success('评论成功')
+    async postRelyFn(words) {
+      await postCommit(this.item.com_id, words, this.$route.query.art_id)
+      this.getCommitList()
       this.replyCommitShow = false
-      console.log(res)
     }
   }
 }
@@ -91,5 +95,8 @@ export default {
   display: flex;
   align-items: center;
   padding: 0.42667rem 0 0.42667rem 0.42667rem;
+}
+.reply-pop {
+  padding-bottom: 2rem;
 }
 </style>

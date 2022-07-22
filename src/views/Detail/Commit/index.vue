@@ -28,9 +28,8 @@
     </div>
   </div>
 </template>
-
 <script>
-import { getLike, concelLike } from '@/apis'
+import { getLikeComment, concelLikeComment } from '@/apis'
 export default {
   data() {
     return {
@@ -44,25 +43,17 @@ export default {
   },
   methods: {
     replyFn(item) {
-      this.$emit('getReply')
-      this.$store.state.replyCommit = item
+      this.$emit('getReply', item)
+      this.$store.commit('setItem', item)
+      // console.log(this.$store.state.replyCimmit)
       this.islike = item.is_liking
     },
     async getLikeFn(id) {
       this.islike = !this.islike
-      console.log(this.islike)
       if (this.islike) {
-        console.log(id)
-        const res = await getLike(id)
-
-        console.log('点赞')
-        console.log(res)
+        await getLikeComment(id)
       } else {
-        console.log(id)
-        const res = await concelLike(id)
-
-        console.log('取消赞')
-        console.log(res)
+        await concelLikeComment(id)
       }
     }
   }
@@ -139,7 +130,7 @@ export default {
     margin-right: 0.33333rem;
   }
   .van-button--normal {
-    width: 1.8rem;
+    width: 2.2rem;
     height: 0.64rem;
     line-height: 0.64rem;
     font-size: 0.28rem;

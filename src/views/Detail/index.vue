@@ -12,13 +12,11 @@
           <div class="user-time">{{ newsInfo.pubdate }}</div>
         </div>
         <div class="user-follow" @click="getFollowFn(newsInfo.aut_id)">
-          <van-button type="info" v-show="!newsInfo.is_followed">
+          <van-button type="info" v-if="!newsInfo.is_followed">
             <van-icon name="plus" />
             关注
           </van-button>
-          <van-button type="info" v-show="newsInfo.is_followed">
-            已关注
-          </van-button>
+          <van-button type="info" v-else> 已关注 </van-button>
         </div>
       </div>
       <div class="article-content">
@@ -39,8 +37,11 @@
     > -->
     <van-cell v-for="(item, index) in commitList" :key="index">
       <commitPart :item="item" @getReply="getReplyFn"></commitPart>
+
+      <!-- </van-list> -->
     </van-cell>
     <!-- 评论回复的弹出层 -->
+    <!-- <div v-if="show"> -->
     <van-popup
       v-model="isReplyShow"
       closeable
@@ -50,7 +51,8 @@
     >
       <replyList></replyList>
     </van-popup>
-    <!-- </van-list> -->
+    <!-- </div> -->
+
     <div class="article-bottom">
       <van-button type="default" @click="isCommitShow = true"
         >写评论</van-button
@@ -68,13 +70,13 @@
       <van-badge :content="commitList.length">
         <i class="toutiao toutiao-wenda child"></i>
       </van-badge>
-      <div @click="isCollectedFn(newsInfo.aut_id)">
-        <van-icon name="star-o" v-show="!newsInfo.is_collected" />
-        <van-icon name="star" v-show="newsInfo.is_collected" />
+      <div @click="isCollectedFn(newsInfo.art_id)">
+        <van-icon name="star-o" v-if="!newsInfo.is_collected" />
+        <van-icon name="star" v-else />
       </div>
-      <div @click="isLikeFn(newsInfo.aut_id)">
-        <van-icon name="good-job-o" v-show="newsInfo.attitude === -1" />
-        <van-icon name="good-job" v-show="newsInfo.attitude === 1" />
+      <div @click="isLikeFn(newsInfo.art_id)">
+        <van-icon name="good-job-o" v-if="newsInfo.attitude === -1" />
+        <van-icon name="good-job" v-else />
       </div>
 
       <i class="toutiao toutiao-fenxiang"></i>
@@ -105,64 +107,58 @@ export default {
       allCommits: '',
       newsInfo: {},
       commitList: [],
-      // words: '',
       isCommitShow: false,
-      isReplyShow: false
-      // loading: false,
-      // finished: false,
-      // last_id: '',
-      // end_id: ''
+      isReplyShow: false,
+      loading: false,
+      finished: false,
+      last_id: '',
+      end_id: ''
+      // show: true
     }
   },
   created() {
     this.getNewsDetail()
     this.getCommit()
   },
-  // computed: {
-  //   getwords() {
-  //     return this.words.length
-  //   }
-  // },
   methods: {
     BackToPrePage() {
       this.$router.back()
     },
     getReplyFn() {
+      // this.show = false
+      // this.show = true
       this.isReplyShow = true
     },
     // 上传评论
     async postCommitFn(words) {
       try {
-        const res = await postCommit(this.$store.state.article_id, words)
-        this.words = ''
-        console.log(res)
+        await postCommit(this.$route.query.art_id, words)
         this.getCommit()
         this.$toast.success('评论成功')
         this.isCommitShow = false
       } catch (error) {
-        this.toast.fail('上传评论失败')
+        this.$toast.fail('上传评论失败')
       }
     },
     // 获取文章详情
     async getNewsDetail() {
       try {
-        const res = await getNewsDetail(this.$store.state.article_id)
+        const res = await getNewsDetail(this.$route.query.art_id)
         this.newsInfo = res.data.data
-        console.log(this.newsInfo)
         // this.last_id = res.data.data.last_id
         // this.end_id = res.data.data.end_id
       } catch (error) {
-        this.toast.fail('获取文章详情失败')
+        this.$toast.fail('获取文章详情失败')
       }
     },
     // 获取评论
     async getCommit() {
       try {
-        const res = await getCommit('a', this.$store.state.article_id)
+        const res = await getCommit('a', this.$route.query.art_id)
         this.commitList = res.data.data.results
         this.allCommits = res.data.data.total_count
       } catch (error) {
-        this.toast.fail('获取评论失败')
+        this.$toast.fail('获取评论失败')
       }
     },
     // async loadCommit() {
@@ -184,11 +180,9 @@ export default {
       try {
         this.newsInfo.is_followed = !this.newsInfo.is_followed
         if (this.newsInfo.is_followed) {
-          const res = await getFollow(id)
-          console.log(res)
+          await getFollow(id)
         } else {
-          const res = await concelFollow(id)
-          console.log(res)
+          await concelFollow(id)
         }
         this.$toast.success('操作成功')
       } catch (error) {
@@ -201,11 +195,9 @@ export default {
       try {
         this.newsInfo.is_collected = !this.newsInfo.is_collected
         if (this.newsInfo.is_collected) {
-          const res = await getCollected(id)
-          console.log(res)
+          await getCollected(id)
         } else {
-          const res = await concelCollected(id)
-          console.log(res)
+          await concelCollected(id)
         }
         this.$toast.success('操作成功')
       } catch (error) {
@@ -217,12 +209,9 @@ export default {
     async isLikeFn(id) {
       this.newsInfo.attitude = -this.newsInfo.attitude
       if (this.newsInfo.attitude === 1) {
-        const res = await getLike(id)
-        console.log(res)
-        console.log('带你赞')
+        await getLike(id)
       } else if (this.newsInfo.attitude === -1) {
-        const res = await concelLike(id)
-        console.log(res)
+        await concelLike(id)
       }
     }
   }

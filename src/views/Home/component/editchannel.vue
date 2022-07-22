@@ -96,7 +96,7 @@ export default {
       return this.allChannels.filter((item) => {
         // 如果在我的列表中找到与频道列表中一样的元素，则返回false表示新数组中不要该元素
         // const result = this.myChannels.find((i) => i.id === item.id)
-        return !this.myChannels.find((i) => i.id === item.id)
+        return !this.myChannels.find(i => i.id === item.id)
         // if (result) {
         //   return false
         // } else {

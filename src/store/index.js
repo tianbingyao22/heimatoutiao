@@ -7,7 +7,8 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     // 声明存储token的变量
-    user: getToken() || {}
+    user: getToken() || {},
+    article_id: ''
   },
 
   mutations: {

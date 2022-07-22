@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div @click="getNewsDetail(articleInfo)">
     <!-- 渲染无图片 -->
     <van-cell
       v-if="articleInfo.cover.type === 0"
@@ -54,6 +54,12 @@ export default {
       const art = this.articleInfo
       const time = dayjs(art.pubdate).fromNow()
       return `${art.aut_name} ${art.comm_count}评论 ${time}`
+    }
+  },
+  methods: {
+    getNewsDetail(item) {
+      this.$store.state.article_id = item.art_id
+      this.$router.push('/detail')
     }
   }
 }

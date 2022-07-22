@@ -33,7 +33,7 @@ export const deleteChannel = (target) => {
 export const addChannel = (id, seq) => {
   return request({
     url: '/v1_0/user/channels',
-    methed: 'PATCH',
+    method: 'PATCH',
     data: {
       channels: [{ id, seq }]
     }

@@ -8,7 +8,8 @@ export default new Vuex.Store({
   state: {
     // 声明存储token的变量
     user: getToken() || {},
-    article_id: ''
+    article_id: '',
+    replyCimmit: {}
   },
 
   mutations: {

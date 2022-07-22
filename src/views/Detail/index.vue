@@ -11,15 +11,21 @@
           <div class="user-name">{{ newsInfo.aut_name }}</div>
           <div class="user-time">{{ newsInfo.pubdate }}</div>
         </div>
-        <div class="user-follow">
-          <van-button type="info">
+        <div class="user-follow" @click="getFollowFn(newsInfo.aut_id)">
+          <van-button type="info" v-show="!newsInfo.is_followed">
             <van-icon name="plus" />
             关注
+          </van-button>
+          <van-button type="info" v-show="newsInfo.is_followed">
+            已关注
           </van-button>
         </div>
       </div>
       <div class="article-content">
-        <div v-html="newsInfo.content"></div>
+        <div
+          v-html="newsInfo.content"
+          class="article-content markdown-body"
+        ></div>
       </div>
       <div class="article-end">
         <van-divider>正文结束</van-divider>
@@ -31,115 +37,133 @@
       finished-text="没有更多了"
       @load="loadCommit"
     > -->
-      <van-cell v-for="(item, index) in commitList" :key="index">
-        <div class="commit">
-          <div class="commit-info">
-            <div class="commit-img">
-              <img :src="item.aut_photo" alt="" />
-            </div>
-            <div class="commit-text">
-              <div class="commit-title">
-                <div class="commit-id">{{ item.aut_name }}</div>
-                <div class="dianzan">
-                  <van-icon name="good-job-o" />
-                  点赞
-                </div>
-              </div>
-              <div class="commit-coment">
-                <p>{{ item.content }}</p>
-                <div class="bottom-info">
-                  <span class="commit-time">{{ item.pubdate }}</span>
-                  <van-button type="default"
-                    >回复{{ item.reply_count }}</van-button
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </van-cell>
+    <van-cell v-for="(item, index) in commitList" :key="index">
+      <commitPart :item="item" @getReply="getReplyFn"></commitPart>
+    </van-cell>
+    <!-- 评论回复的弹出层 -->
+    <van-popup
+      v-model="isReplyShow"
+      closeable
+      close-icon-position="top-left"
+      position="bottom"
+      :style="{ height: '100%' }"
+    >
+      <replyList></replyList>
+    </van-popup>
     <!-- </van-list> -->
     <div class="article-bottom">
       <van-button type="default" @click="isCommitShow = true"
         >写评论</van-button
       >
+
+      <!-- 文章评论的弹出层 -->
       <van-popup
         v-model="isCommitShow"
         position="bottom"
         :style="{ height: '18%' }"
         class="commit-pop"
       >
-        <div class="commit-post">
-          <div class="post-field">
-            <div class="van-field__body">
-              <textarea
-                rows="2"
-                placeholder="请输入留言"
-                v-model="words"
-              ></textarea>
-            </div>
-            <div class="word-limit">
-              <span class="word-num">{{ getwords }}</span
-              >/50
-            </div>
-          </div>
-        </div>
-        <div class="fabu">
-          <van-button type="default" class="fabu-btn" @click="postCommit"
-            >发布</van-button
-          >
-        </div>
+        <commitPop @postCommit="postCommitFn"></commitPop>
       </van-popup>
       <van-badge :content="commitList.length">
         <i class="toutiao toutiao-wenda child"></i>
       </van-badge>
-      <i class="toutiao toutiao-shoucang"></i>
-      <i class="toutiao toutiao-dianzan2"></i>
+      <div @click="isCollectedFn(newsInfo.aut_id)">
+        <van-icon name="star-o" v-show="!newsInfo.is_collected" />
+        <van-icon name="star" v-show="newsInfo.is_collected" />
+      </div>
+      <div @click="isLikeFn(newsInfo.aut_id)">
+        <van-icon name="good-job-o" v-show="newsInfo.attitude === -1" />
+        <van-icon name="good-job" v-show="newsInfo.attitude === 1" />
+      </div>
+
       <i class="toutiao toutiao-fenxiang"></i>
     </div>
   </div>
 </template>
 
 <script>
-import { getNewsDetail, getCommit, postCommit } from '@/apis'
+import {
+  getNewsDetail,
+  getCommit,
+  postCommit,
+  getFollow,
+  concelFollow,
+  getCollected,
+  concelCollected,
+  getLike,
+  concelLike
+} from '@/apis'
+
+import replyList from './Reply'
+import commitPart from './Commit'
+import commitPop from './message-pop'
 export default {
+  components: { replyList, commitPart, commitPop },
   data() {
     return {
       allCommits: '',
       newsInfo: {},
       commitList: [],
-      words: '',
+      // words: '',
       isCommitShow: false,
-      loading: false,
-      finished: false,
-      last_id: '',
-      end_id: ''
+      isReplyShow: false
+      // loading: false,
+      // finished: false,
+      // last_id: '',
+      // end_id: ''
     }
   },
   created() {
     this.getNewsDetail()
     this.getCommit()
   },
-  computed: {
-    getwords() {
-      return this.words.length
-    }
-  },
+  // computed: {
+  //   getwords() {
+  //     return this.words.length
+  //   }
+  // },
   methods: {
     BackToPrePage() {
       this.$router.back()
     },
-    async getNewsDetail() {
-      const res = await getNewsDetail(this.$store.state.article_id)
-      this.newsInfo = res.data.data
-      this.last_id = res.data.data.last_id
-      this.end_id = res.data.data.end_id
+    getReplyFn() {
+      this.isReplyShow = true
     },
+    // 上传评论
+    async postCommitFn(words) {
+      try {
+        const res = await postCommit(this.$store.state.article_id, words)
+        this.words = ''
+        console.log(res)
+        this.getCommit()
+        this.$toast.success('评论成功')
+        this.isCommitShow = false
+      } catch (error) {
+        this.toast.fail('上传评论失败')
+      }
+    },
+    // 获取文章详情
+    async getNewsDetail() {
+      try {
+        const res = await getNewsDetail(this.$store.state.article_id)
+        this.newsInfo = res.data.data
+        console.log(this.newsInfo)
+        // this.last_id = res.data.data.last_id
+        // this.end_id = res.data.data.end_id
+      } catch (error) {
+        this.toast.fail('获取文章详情失败')
+      }
+    },
+    // 获取评论
     async getCommit() {
-      const res = await getCommit('a', this.$store.state.article_id)
-      this.commitList = res.data.data.results
-      this.allCommits = res.data.data.total_count
-      //   console.log(this.commitList)
+      try {
+        const res = await getCommit('a', this.$store.state.article_id)
+        this.commitList = res.data.data.results
+        this.allCommits = res.data.data.total_count
+      } catch (error) {
+        this.toast.fail('获取评论失败')
+      }
     },
     // async loadCommit() {
     //   const res = await getCommit(
@@ -154,13 +178,52 @@ export default {
     //   }
     //   this.loading = false
     // },
-    async postCommit() {
-      const res = await postCommit(this.$store.state.article_id, this.words)
-      this.words = ''
-      console.log(res)
-      this.getCommit()
-      this.$toast.success('评论成功')
-      this.isCommitShow = false
+
+    // 关注用户
+    async getFollowFn(id) {
+      try {
+        this.newsInfo.is_followed = !this.newsInfo.is_followed
+        if (this.newsInfo.is_followed) {
+          const res = await getFollow(id)
+          console.log(res)
+        } else {
+          const res = await concelFollow(id)
+          console.log(res)
+        }
+        this.$toast.success('操作成功')
+      } catch (error) {
+        this.$toast.fail('操作失败')
+      }
+    },
+
+    // 收藏文章  getCollected,concelCollected
+    async isCollectedFn(id) {
+      try {
+        this.newsInfo.is_collected = !this.newsInfo.is_collected
+        if (this.newsInfo.is_collected) {
+          const res = await getCollected(id)
+          console.log(res)
+        } else {
+          const res = await concelCollected(id)
+          console.log(res)
+        }
+        this.$toast.success('操作成功')
+      } catch (error) {
+        this.$toast.fail('操作失败')
+      }
+    },
+
+    // 点赞文章  getLike,concelLike
+    async isLikeFn(id) {
+      this.newsInfo.attitude = -this.newsInfo.attitude
+      if (this.newsInfo.attitude === 1) {
+        const res = await getLike(id)
+        console.log(res)
+        console.log('带你赞')
+      } else if (this.newsInfo.attitude === -1) {
+        const res = await concelLike(id)
+        console.log(res)
+      }
     }
   }
 }
@@ -171,6 +234,10 @@ export default {
   padding-bottom: 100px;
 }
 .van-nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   background-color: #3296fa;
   :deep(.van-nav-bar__title) {
     color: #fff;
@@ -180,6 +247,7 @@ export default {
   }
 }
 .article-detail {
+  padding-top: 100px;
   h1 {
     font-size: 0.53333rem;
     padding: 0.66667rem 0.42667rem;
@@ -238,42 +306,7 @@ export default {
     }
   }
   .article-content {
-    padding: 0.73333rem 0.42667rem;
-    :deep(h2) {
-      margin-top: 0 !important;
-      font-size: 15px;
-      padding-bottom: 0.3em;
-      border-bottom: 0.01333rem solid #eaecef;
-      margin-bottom: 0.21333rem;
-      font-weight: 600;
-      line-height: 1.25;
-    }
-    :deep(p) {
-      font-size: 0.21333rem;
-    }
-    :deep(h1) {
-      font-size: 20px;
-    }
-    :deep(h3) {
-      font-size: 15px;
-    }
-    :deep(h4) {
-      font-size: 15px;
-    }
-    :deep(h5) {
-      font-size: 15px;
-    }
-    :deep(pre) {
-      padding: 0.21333rem;
-      overflow: auto;
-      font-size: 12px;
-      line-height: 1.45;
-      background-color: #f6f8fa;
-      border-radius: 0.04rem;
-    }
-    :deep(li) {
-      font-size: 16px;
-    }
+    padding: 0px 20px;
   }
   :deep(.article-end) {
     align-items: center;
@@ -284,83 +317,6 @@ export default {
     border-color: #ebedf0;
     border-style: solid;
     border-width: 0;
-  }
-}
-.commit {
-  .commit-info {
-    position: relative;
-    display: flex;
-    box-sizing: border-box;
-    width: 100%;
-    padding: 0.26667rem 0.42667rem;
-    overflow: hidden;
-    color: #323233;
-    font-size: 0.37333rem;
-    line-height: 0.64rem;
-    background-color: #fff;
-    .commit-img {
-      width: 0.96rem;
-      height: 0.96rem;
-      margin-right: 0.33333rem;
-      overflow: hidden;
-      border-radius: 50%;
-      img {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-    }
-    .commit-text {
-      flex: 1;
-      .commit-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex: 1;
-        height: 24px;
-        padding-top: 10px;
-        .commit-id {
-          color: #406599;
-          font-size: 0.34667rem;
-        }
-        .dianzan {
-          height: 0.4rem;
-          padding: 0;
-          border: none;
-          font-size: 0.25333rem;
-          line-height: 0.4rem;
-          margin-right: 0.09333rem;
-          .van-icon-good-job-o {
-            font-size: 0.4rem;
-          }
-        }
-      }
-      :deep(.comiit-coment) {
-        p {
-          font-size: 0.42667rem;
-          color: #222;
-          word-break: break-all;
-          text-align: justify;
-        }
-      }
-    }
-  }
-}
-.bottom-info {
-  display: flex;
-  align-items: center;
-  .commit-time {
-    font-size: 0.25333rem;
-    color: #222;
-    margin-right: 0.33333rem;
-  }
-  .van-button--normal {
-    width: 1.8rem;
-    height: 0.64rem;
-    line-height: 0.64rem;
-    font-size: 0.28rem;
-    color: #222;
-    border-radius: 26.64rem;
   }
 }
 
@@ -393,60 +349,11 @@ export default {
   display: flex;
   align-items: center;
   padding: 0.42667rem 0 0.42667rem 0.42667rem;
-  .commit-post {
-    background-color: #f5f7f9;
-    display: flex;
-    box-sizing: border-box;
-    width: 100%;
-    padding: 0.26667rem 0.42667rem;
-    overflow: hidden;
-    color: #323233;
-    font-size: 0.37333rem;
-    line-height: 0.64rem;
-    .post-field {
-      color: #323233;
-      text-align: left;
-      position: relative;
-      vertical-align: middle;
-      word-wrap: break-word;
-      flex: 1;
-      .van-field__body {
-        color: #323233;
-        text-align: left;
-        textarea {
-          display: block;
-          box-sizing: border-box;
-          width: 100%;
-          min-width: 0;
-          margin: 0;
-          padding: 0;
-          color: #323233;
-          line-height: inherit;
-          text-align: left;
-          background-color: transparent;
-          border: 0;
-          resize: none;
-        }
-      }
-      .word-limit {
-        margin-top: 0.10667rem;
-        color: #646566;
-        font-size: 0.32rem;
-        line-height: 0.42667rem;
-        text-align: right;
-      }
-    }
-  }
-  .fabu-btn {
-    height: 100%;
-    border-radius: 0;
-    width: 2rem;
-    border: none;
-    padding: 0;
-    color: #6ba3d8;
-    :deep(.van-button__text) {
-      margin-right: 40px;
-    }
-  }
+}
+.van-icon-star {
+  color: red;
+}
+.van-icon-good-job {
+  color: red;
 }
 </style>

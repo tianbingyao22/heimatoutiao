@@ -19,7 +19,7 @@
           <div class="commit-coment">
             <p>{{ item.content }}</p>
             <div class="bottom-info">
-              <span class="commit-time">{{ item.pubdate }}</span>
+              <span class="commit-time">{{ timer }}</span>
               <van-button type="default" @click="replyFn(item)"
                 >回复{{ item.reply_count }}</van-button
               >
@@ -31,12 +31,14 @@
   </div>
 </template>
 <script>
+import dayjs from '@/utail/dayjs'
 import { getLikeComment, concelLikeComment } from '@/apis'
 export default {
   data() {
     return {
       islike: this.item.is_liking,
-      like_count: this.item.like_count
+      like_count: this.item.like_count,
+      timer: dayjs(this.item.pubdate).fromNow()
     }
   },
   props: {

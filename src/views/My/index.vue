@@ -21,8 +21,13 @@
           </van-col>
           <van-col span="11" class="v-col">
             <van-row type="flex" align="center" justify="end">
-              <van-button color="#ededed" size="mini" round class="code-row"
-                >发送验证码</van-button
+              <van-button
+                color="#ededed"
+                size="mini"
+                round
+                class="code-row"
+                @click="editUserInfo"
+                >编辑资料</van-button
               >
             </van-row>
           </van-col>
@@ -124,6 +129,15 @@ export default {
       } catch (err) {
         this.$toast.fail('请重新登录')
       }
+    },
+    // 编辑用户信息
+    editUserInfo() {
+      this.$router.push({
+        path: '/user',
+        query: {
+          userInfo: this.userInfo
+        }
+      })
     }
   }
 }

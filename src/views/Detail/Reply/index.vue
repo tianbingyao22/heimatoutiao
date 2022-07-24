@@ -5,11 +5,18 @@
     <commitpart :item="item"></commitpart>
     <van-cell title="全部回复" />
     <!-- 单个回复评论组件 -->
-    <commitpart
-      v-for="item1 in replyList"
-      :key="item1.com_id"
-      :item="item1"
-    ></commitpart>
+    <van-list
+      v-model="loading"
+      :finished="finished"
+      finished-text="没有更多了"
+      @load="loadReplyFn"
+    >
+      <commitpart
+        v-for="item1 in replyList"
+        :key="item1.com_id"
+        :item="item1"
+      ></commitpart>
+    </van-list>
     <!--底部按钮  -->
     <div class="reply-btn">
       <van-button
@@ -45,7 +52,11 @@ export default {
   data() {
     return {
       replyCommitShow: false,
-      replyList: []
+      replyList: [],
+      loading: false,
+      finished: false,
+      last_id: '',
+      end_id: ''
     }
   },
   created() {
@@ -65,6 +76,24 @@ export default {
     async getCommitList() {
       const res = await getCommit('c', this.item.com_id)
       this.replyList = res.data.data.results
+      this.last_id = res.data.data.last_id
+      this.end_id = res.data.data.end_id
+      // console.log(res)
+    },
+    async loadReplyFn() {
+      if (!this.last_id) {
+        this.loading = false
+        return
+      }
+      if (this.last_id === this.end_id) {
+        this.finished = true
+        return
+      }
+      const res = await getCommit('c', this.item.com_id, this.last_id)
+      this.replyList.push(...res.data.data.results)
+      this.last_id = res.data.data.last_id
+      this.end_id = res.data.data.end_id
+      this.loading = false
     },
     async postRelyFn(words) {
       await postCommit(this.item.com_id, words, this.$route.query.art_id)

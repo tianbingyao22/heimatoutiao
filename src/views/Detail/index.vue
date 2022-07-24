@@ -29,17 +29,17 @@
         <van-divider>正文结束</van-divider>
       </div>
     </div>
-    <!-- <van-list
+    <van-list
       v-model="loading"
       :finished="finished"
       finished-text="没有更多了"
       @load="loadCommit"
-    > -->
-    <van-cell v-for="(item, index) in commitList" :key="index">
-      <commitPart :item="item" @getReply="getReplyFn"></commitPart>
+    >
+      <van-cell v-for="(item, index) in commitList" :key="index">
+        <commitPart :item="item" @getReply="getReplyFn"></commitPart>
+      </van-cell>
+    </van-list>
 
-      <!-- </van-list> -->
-    </van-cell>
     <!-- 评论回复的弹出层 -->
     <!-- <div v-if="show"> -->
     <van-popup
@@ -67,7 +67,7 @@
       >
         <commitPop @postCommit="postCommitFn"></commitPop>
       </van-popup>
-      <van-badge :content="commitList.length">
+      <van-badge :content="total_count">
         <i class="toutiao toutiao-wenda child"></i>
       </van-badge>
       <div @click="isCollectedFn(newsInfo.art_id)">
@@ -75,12 +75,20 @@
         <van-icon name="star" v-else />
       </div>
       <div @click="isLikeFn(newsInfo.art_id)">
-        <van-icon name="good-job-o" v-if="newsInfo.attitude === -1" />
-        <van-icon name="good-job" v-else />
+        <van-badge :content="like_count">
+          <van-icon name="good-job-o" v-if="newsInfo.attitude === -1" />
+          <van-icon name="good-job" v-else />
+        </van-badge>
       </div>
 
-      <i class="toutiao toutiao-fenxiang"></i>
+      <i class="toutiao toutiao-fenxiang" @click="showShare = true"></i>
     </div>
+    <van-share-sheet
+      v-model="showShare"
+      title="立即分享给好友"
+      :options="options"
+      @select="onSelect"
+    />
   </div>
 </template>
 
@@ -112,7 +120,17 @@ export default {
       loading: false,
       finished: false,
       last_id: '',
-      end_id: ''
+      end_id: '',
+      total_count: '',
+      like_count: '',
+      showShare: false,
+      options: [
+        { name: '微信', icon: 'wechat' },
+        { name: '微博', icon: 'weibo' },
+        { name: '复制链接', icon: 'link' },
+        { name: '分享海报', icon: 'poster' },
+        { name: '二维码', icon: 'qrcode' }
+      ]
       // show: true
     }
   },
@@ -121,6 +139,10 @@ export default {
     this.getCommit()
   },
   methods: {
+    onSelect(option) {
+      this.$toast(option.name)
+      this.showShare = false
+    },
     BackToPrePage() {
       this.$router.back()
     },
@@ -145,8 +167,7 @@ export default {
       try {
         const res = await getNewsDetail(this.$route.query.art_id)
         this.newsInfo = res.data.data
-        // this.last_id = res.data.data.last_id
-        // this.end_id = res.data.data.end_id
+        this.like_count = res.data.data.like_count
       } catch (error) {
         this.$toast.fail('获取文章详情失败')
       }
@@ -157,23 +178,28 @@ export default {
         const res = await getCommit('a', this.$route.query.art_id)
         this.commitList = res.data.data.results
         this.allCommits = res.data.data.total_count
+        this.last_id = res.data.data.last_id
+        this.end_id = res.data.data.end_id
+        this.total_count = res.data.data.total_count
       } catch (error) {
         this.$toast.fail('获取评论失败')
       }
     },
-    // async loadCommit() {
-    //   const res = await getCommit(
-    //     'a',
-    //     this.$store.state.article_id,
-    //     this.last_id
-    //   )
-    //   console.log(res)
-    //   this.commitList.push(res.data.data.result)
-    //   if (this.commitList.length >= res.data.data.total_count) {
-    //     this.finished = true
-    //   }
-    //   this.loading = false
-    // },
+    async loadCommit() {
+      if (!this.last_id) {
+        this.loading = false
+        return
+      }
+      if (this.last_id === this.end_id) {
+        this.finished = true
+        return
+      }
+      const res = await getCommit('a', this.$route.query.art_id, this.last_id)
+      this.commitList.push(...res.data.data.results)
+      this.last_id = res.data.data.last_id
+      this.end_id = res.data.data.end_id
+      this.loading = false
+    },
 
     // 关注用户
     async getFollowFn(id) {
@@ -210,8 +236,10 @@ export default {
       this.newsInfo.attitude = -this.newsInfo.attitude
       if (this.newsInfo.attitude === 1) {
         await getLike(id)
+        this.like_count = this.like_count + 1
       } else if (this.newsInfo.attitude === -1) {
         await concelLike(id)
+        this.like_count = this.like_count - 1
       }
     }
   }

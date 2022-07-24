@@ -9,8 +9,10 @@
           <div class="commit-title">
             <div class="commit-id">{{ item.aut_name }}</div>
             <div class="dianzan" @click="getLikeFn(item.com_id)">
-              <van-icon name="good-job-o" v-show="!islike" />
-              <van-icon name="good-job" v-show="islike" />
+              <van-badge :content="like_count">
+                <van-icon name="good-job-o" v-show="!islike" />
+                <van-icon name="good-job" v-show="islike" />
+              </van-badge>
               {{ islike ? '取消赞' : '点赞' }}
             </div>
           </div>
@@ -33,7 +35,8 @@ import { getLikeComment, concelLikeComment } from '@/apis'
 export default {
   data() {
     return {
-      islike: ''
+      islike: this.item.is_liking,
+      like_count: this.item.like_count
     }
   },
   props: {
@@ -45,15 +48,15 @@ export default {
     replyFn(item) {
       this.$emit('getReply', item)
       this.$store.commit('setItem', item)
-      // console.log(this.$store.state.replyCimmit)
-      this.islike = item.is_liking
     },
     async getLikeFn(id) {
       this.islike = !this.islike
       if (this.islike) {
         await getLikeComment(id)
+        this.like_count = this.like_count + 1
       } else {
         await concelLikeComment(id)
+        this.like_count = this.like_count - 1
       }
     }
   }
